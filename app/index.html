@@ -1,4 +1,3 @@
-<!-- frontend.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,19 +5,75 @@
 </head>
 <body>
   <h2>Live Webcam Preview</h2>
+
+  <!-- Button to start the video stream -->
+  <button id="start-video-btn">Start Video</button>
+
+  <!-- Button to stop the video stream -->
+  <button id="stop-video-btn" disabled>Stop Video</button>
+
+  <!-- Canvas to display the webcam video -->
   <canvas id="canvas" width="640" height="480"></canvas>
 
   <script>
-    const ws = new WebSocket("ws://localhost:8000/ws/video");
+    let ws;  // WebSocket instance
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
-    ws.onmessage = (event) => {
-      img.src = "data:image/jpeg;base64," + event.data;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      };
+    // Function to start the video stream
+    document.getElementById("start-video-btn").onclick = () => {
+      // Check if the WebSocket is already open, if so, don't create a new one
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        ws = new WebSocket("ws://localhost:8000/ws/video");
+
+        ws.onopen = () => {
+          console.log("Connected to the WebSocket server.");
+          document.getElementById("start-video-btn").disabled = true;  // Disable the start button after clicking
+          document.getElementById("stop-video-btn").disabled = false;  // Enable the stop button
+        };
+
+        ws.onmessage = (event) => {
+          img.src = "data:image/jpeg;base64," + event.data;
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket connection closed.");
+        };
+
+        ws.onerror = (error) => {
+          console.log("WebSocket error:", error);
+        };
+      } else {
+        console.log("WebSocket already connected.");
+      }
+    };
+
+    // Function to stop the video stream using the POST endpoint
+    document.getElementById("stop-video-btn").onclick = async () => {
+      try {
+        // Send a POST request to stop the video stream
+        const response = await fetch("http://localhost:8000/stop-video", {
+          method: "POST",
+        });
+
+        if (response.ok) {
+          console.log("Video stream stopped.");
+          // Close the WebSocket connection after receiving confirmation from the server
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+            document.getElementById("start-video-btn").disabled = false;  // Enable the start button after stopping
+            document.getElementById("stop-video-btn").disabled = true;  // Disable the stop button
+          }
+        } else {
+          console.log("Failed to stop video stream:", response.statusText);
+        }
+      } catch (error) {
+        console.log("Error stopping video stream:", error);
+      }
     };
   </script>
 </body>
