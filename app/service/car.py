@@ -31,3 +31,9 @@ class CarParkingService:
             entrance_time=car.entrance_time,
             exit_time=car.exit_time
         ) for car in cars]
+
+    async def get_logs_after(self, last_seen_time: Optional[datetime]):
+        if last_seen_time is None:
+            # Initial fetch - get recent N logs
+            return self.car_parking_repository.get_recent_logs(limit=10)
+        return self.car_parking_repository.get_logs_after_time(last_seen_time)
