@@ -1,0 +1,25 @@
+<!-- frontend.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Webcam Stream</title>
+</head>
+<body>
+  <h2>Live Webcam Preview</h2>
+  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8000/ws/video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    ws.onmessage = (event) => {
+      img.src = "data:image/jpeg;base64," + event.data;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    };
+  </script>
+</body>
+</html>
